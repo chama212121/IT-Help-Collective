@@ -24,7 +24,7 @@ import {
 import { supabase } from "./supabaseClient";
 
 // ---------------------------------------------------------------------------
-// IT Help Collective
+// TechReach
 // Free community technology support
 // ---------------------------------------------------------------------------
 
@@ -118,7 +118,7 @@ export default function App() {
       <header className="topbar">
         <div className="brand">
           <NodeMark />
-          <span className="brand-name">IT Help Collective</span>
+          <span className="brand-name">TechReach</span>
         </div>
 
         <nav className="tabs" role="tablist">
@@ -147,7 +147,7 @@ export default function App() {
       <footer className="foot">
         <div className="footer-inner">
           <div>
-            <strong>IT Help Collective</strong>
+            <strong>TechReach</strong>
             <span>Free technology help from real people.</span>
           </div>
 
@@ -698,7 +698,7 @@ function PublicView() {
             </strong>
 
             <p>
-              IT Help Collective is a free community service.
+              TechReach is a free community service.
             </p>
           </div>
 
