@@ -9,7 +9,8 @@ import {
   ChevronUp,
   CheckCircle2,
   Loader2,
-  Radio,
+  LogOut,
+  Lock,
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
 
@@ -23,8 +24,6 @@ import { supabase } from "./supabaseClient";
 // That's fine for a small trusted team; add Supabase Auth before this ever
 // handles anything sensitive.
 // ---------------------------------------------------------------------------
-
-const VOLUNTEER_KEY = "ithc_volunteer_name";
 
 const CONTACT_METHODS = [
   { id: "phone", label: "Phone call", icon: Phone },
@@ -268,52 +267,90 @@ function Step({ n, label, text }) {
 // ---------------------------------------------------------------------------
 
 function VolunteerView() {
-  const [volunteerName, setVolunteerName] = useState(
-    () => localStorage.getItem(VOLUNTEER_KEY) || null
-  );
-  const [nameInput, setNameInput] = useState("");
+  const [session, setSession] = useState(null);
+  const [checking, setChecking] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [signingIn, setSigningIn] = useState(false);
 
-  function saveName(e) {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setChecking(false);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  async function handleLogin(e) {
     e.preventDefault();
-    const trimmed = nameInput.trim();
-    if (!trimmed) return;
-    localStorage.setItem(VOLUNTEER_KEY, trimmed);
-    setVolunteerName(trimmed);
+    setSigningIn(true);
+    setError("");
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      setError("That email or password didn't work. Ask a team lead if you don't have an account yet.");
+    }
+    setSigningIn(false);
   }
 
-  if (!volunteerName) {
+  if (checking) {
     return (
       <main className="wrap">
-        <form className="card gate" onSubmit={saveName}>
-          <Radio size={28} color="var(--teal)" />
+        <div className="center-loading">
+          <Loader2 className="spin" size={20} />
+        </div>
+      </main>
+    );
+  }
+
+  if (!session) {
+    return (
+      <main className="wrap">
+        <form className="card gate" onSubmit={handleLogin}>
+          <Lock size={26} color="var(--teal)" />
           <h2>Volunteer sign-in</h2>
           <p className="muted">
-            Enter your name so tickets you claim show who's helping. This is
-            just a label, not a password — anyone with this page can view the
-            queue. Add real login (Supabase Auth) before opening this to
-            outside volunteers.
+            This queue contains people's contact details, so only invited
+            volunteers can log in. Ask a team lead if you need an account.
           </p>
-          <input
-            value={nameInput}
-            onChange={(e) => setNameInput(e.target.value)}
-            placeholder="Your name"
-            autoFocus
-          />
-          <button className="btn-primary" type="submit" disabled={!nameInput.trim()}>
-            Continue
+          <label className="field">
+            <span>Email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              autoFocus
+            />
+          </label>
+          <label className="field">
+            <span>Password</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+          </label>
+          {error && <p className="error-text">{error}</p>}
+          <button className="btn-primary" type="submit" disabled={!email || !password || signingIn}>
+            {signingIn ? <Loader2 className="spin" size={16} /> : null}
+            {signingIn ? "Signing in…" : "Sign in"}
           </button>
         </form>
       </main>
     );
   }
 
+  const displayName = session.user.user_metadata?.display_name || session.user.email.split("@")[0];
+
   return (
     <Queue
-      volunteerName={volunteerName}
-      onSwitchUser={() => {
-        localStorage.removeItem(VOLUNTEER_KEY);
-        setVolunteerName(null);
-      }}
+      volunteerName={displayName}
+      onSwitchUser={() => supabase.auth.signOut()}
     />
   );
 }
@@ -365,7 +402,8 @@ function Queue({ volunteerName, onSwitchUser }) {
         <div>
           <h2 className="queue-title">Ticket queue</h2>
           <p className="muted">
-            Signed in as {volunteerName} · <button className="link-btn" onClick={onSwitchUser}>switch</button>
+            Signed in as {volunteerName} ·{" "}
+            <button className="link-btn" onClick={onSwitchUser}>log out</button>
           </p>
         </div>
         <button className="btn-ghost" onClick={load}>
@@ -496,6 +534,10 @@ function TicketCard({ ticket, expanded, onToggle, onUpdate, volunteerName }) {
           </label>
         </div>
       )}
+    </li>
+  );
+}
+
     </li>
   );
 }
