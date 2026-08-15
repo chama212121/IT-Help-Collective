@@ -537,7 +537,3 @@ function TicketCard({ ticket, expanded, onToggle, onUpdate, volunteerName }) {
     </li>
   );
 }
-
-    </li>
-  );
-}
