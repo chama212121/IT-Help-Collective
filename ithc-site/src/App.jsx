@@ -24,7 +24,7 @@ import {
 import { supabase } from "./supabaseClient";
 
 // ---------------------------------------------------------------------------
-// TechReach
+// DIGITAL REACH
 // Free community technology support
 // ---------------------------------------------------------------------------
 
@@ -118,7 +118,7 @@ export default function App() {
       <header className="topbar">
         <div className="brand">
           <NodeMark />
-          <span className="brand-name">TechReach</span>
+          <span className="brand-name">DIGITAL REACH</span>
         </div>
 
         <nav className="tabs" role="tablist">
@@ -147,7 +147,7 @@ export default function App() {
       <footer className="foot">
         <div className="footer-inner">
           <div>
-            <strong>TechReach</strong>
+            <strong>DIGITAL REACH</strong>
             <span>Free technology help from real people.</span>
           </div>
 
