@@ -18,14 +18,11 @@ import {
   GraduationCap,
   HeartHandshake,
   ArrowRight,
-  MessageCircle,
+  MessagesSquare,
   LogOut,
-  User,
   Plus,
   Send,
-  History,
   LayoutDashboard,
-  MessagesSquare,
   CircleUserRound,
   Clock3,
   Check,
@@ -53,10 +50,12 @@ const STATUS = {
     label: "New",
     color: "var(--amber)",
   },
+
   in_progress: {
     label: "In progress",
     color: "var(--teal)",
   },
+
   resolved: {
     label: "Resolved",
     color: "var(--slate)",
@@ -131,8 +130,13 @@ function NodeMark({ size = 28 }) {
   );
 }
 
+/* =========================================================
+   APP
+========================================================= */
+
 export default function App() {
   const [view, setView] = useState("public");
+
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
@@ -147,7 +151,7 @@ export default function App() {
       .from("profiles")
       .select("*")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Profile error:", error);
@@ -155,7 +159,7 @@ export default function App() {
       return;
     }
 
-    setProfile(data);
+    setProfile(data || null);
   }, []);
 
   useEffect(() => {
@@ -211,7 +215,6 @@ export default function App() {
       <header className="topbar">
         <button className="brand brand-button" onClick={goHome}>
           <NodeMark />
-
           <span className="brand-name">Digital Hand</span>
         </button>
 
@@ -224,9 +227,7 @@ export default function App() {
           </button>
 
           <button
-            className={`tab ${
-              view === "member" ? "tab-active" : ""
-            }`}
+            className={`tab ${view === "member" ? "tab-active" : ""}`}
             onClick={() => setView("member")}
           >
             {session ? "My support" : "Login"}
@@ -314,7 +315,7 @@ export default function App() {
 }
 
 /* =========================================================
-   PUBLIC / NO ACCOUNT HELP
+   PUBLIC PAGE
 ========================================================= */
 
 function PublicView({
@@ -433,12 +434,15 @@ function PublicView({
         </p>
 
         <div className="hero-choice-grid">
-          <button className="hero-choice-card" onClick={onOpenMember}>
+          <button
+            className="hero-choice-card featured-choice"
+            onClick={onOpenMember}
+          >
             <div className="choice-icon">
               <MessagesSquare size={27} />
             </div>
 
-            <div>
+            <div className="choice-content">
               <h3>Chat with a helper</h3>
 
               <p>
@@ -464,7 +468,7 @@ function PublicView({
               <Phone size={27} />
             </div>
 
-            <div>
+            <div className="choice-content">
               <h3>Request help</h3>
 
               <p>
@@ -540,14 +544,13 @@ function PublicView({
 
       <section className="member-promo">
         <div>
-          <span className="eyebrow">NEW: SAVED SUPPORT</span>
+          <span className="eyebrow">SAVED SUPPORT</span>
 
           <h2>Want to keep your conversation?</h2>
 
           <p>
             Create a free Digital Hand account to chat with helpers,
-            see active support requests and revisit previous
-            conversations whenever you need them.
+            see active support and revisit previous conversations.
           </p>
         </div>
 
@@ -564,8 +567,8 @@ function PublicView({
           <h2>Prefer us to contact you?</h2>
 
           <p>
-            That's completely fine. Tell us what's wrong and choose
-            how you'd like us to get in touch.
+            Tell us what's wrong and choose how you'd like us to get
+            in touch.
           </p>
         </div>
 
@@ -585,7 +588,7 @@ function PublicView({
             <span>Phone number or email</span>
 
             <span className="field-help">
-              So we can contact you about your support request.
+              So a Digital Hand helper can contact you.
             </span>
 
             <input
@@ -725,7 +728,7 @@ function PublicView({
           <HowCard
             number="3"
             title="Come back anytime"
-            text="Account holders can return to their saved conversations and support history."
+            text="Account holders can return to their saved conversations."
           />
         </div>
       </section>
@@ -790,7 +793,7 @@ function HowCard({ number, title, text }) {
 }
 
 /* =========================================================
-   MEMBER AUTH
+   MEMBER AREA
 ========================================================= */
 
 function MemberArea({
@@ -813,23 +816,41 @@ function MemberArea({
       <main className="portal-page">
         <div className="card gate">
           <Loader2 className="spin" size={28} />
+
           <h2>Setting up your profile...</h2>
+
+          <p className="muted">
+            We couldn't find your Digital Hand profile yet.
+          </p>
 
           <button className="btn-ghost" onClick={reloadProfile}>
             Try again
+          </button>
+
+          <button className="btn-ghost" onClick={onSignOut}>
+            Log out
           </button>
         </div>
       </main>
     );
   }
 
-  if (profile.role === "helper" || profile.role === "admin") {
+  if (["helper", "admin"].includes(profile.role)) {
     return (
-      <HelperChatDashboard
-        session={session}
-        profile={profile}
-        onSignOut={onSignOut}
-      />
+      <div className="helper-member-message">
+        <div className="card gate">
+          <HeartHandshake size={35} />
+
+          <span className="eyebrow">HELPER ACCOUNT</span>
+
+          <h2>You're signed in as a Digital Hand helper.</h2>
+
+          <p className="muted">
+            Use the Volunteer Portal to manage live chats and contact
+            requests.
+          </p>
+        </div>
+      </div>
     );
   }
 
@@ -841,6 +862,10 @@ function MemberArea({
     />
   );
 }
+
+/* =========================================================
+   MEMBER AUTH
+========================================================= */
 
 function MemberAuth() {
   const [mode, setMode] = useState("login");
@@ -866,6 +891,7 @@ function MemberAuth() {
           await supabase.auth.signUp({
             email,
             password,
+
             options: {
               data: {
                 display_name: displayName.trim(),
@@ -1025,7 +1051,7 @@ function MemberAuth() {
 
         <p className="auth-small">
           Don't want an account? You can still use the normal help
-          request form on the homepage.
+          request form.
         </p>
       </form>
     </main>
@@ -1033,14 +1059,16 @@ function MemberAuth() {
 }
 
 /* =========================================================
-   NORMAL USER DASHBOARD
+   USER DASHBOARD
 ========================================================= */
 
 function UserDashboard({ session, profile, onSignOut }) {
   const [screen, setScreen] = useState("dashboard");
   const [conversations, setConversations] = useState([]);
+
   const [selectedConversation, setSelectedConversation] =
     useState(null);
+
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -1140,8 +1168,8 @@ function UserDashboard({ session, profile, onSignOut }) {
             </h1>
 
             <p>
-              Your active support and previous conversations are
-              all in one place.
+              Your active support and previous conversations are all
+              in one place.
             </p>
           </div>
 
@@ -1169,17 +1197,13 @@ function UserDashboard({ session, profile, onSignOut }) {
         </div>
 
         {loading ? (
-          <div className="center-loading">
-            <Loader2 className="spin" size={28} />
-          </div>
+          <LoadingPage />
         ) : (
           <>
             <section className="dashboard-section">
               <div className="dashboard-section-title">
-                <div>
-                  <h2>Active support</h2>
-                  <p>Conversations that are still being worked on.</p>
-                </div>
+                <h2>Active support</h2>
+                <p>Conversations that are still being worked on.</p>
               </div>
 
               {active.length === 0 ? (
@@ -1214,13 +1238,11 @@ function UserDashboard({ session, profile, onSignOut }) {
 
             <section className="dashboard-section">
               <div className="dashboard-section-title">
-                <div>
-                  <h2>Previous conversations</h2>
+                <h2>Previous conversations</h2>
 
-                  <p>
-                    Revisit support you've received in the past.
-                  </p>
-                </div>
+                <p>
+                  Revisit support you've received in the past.
+                </p>
               </div>
 
               {previous.length === 0 ? (
@@ -1263,8 +1285,10 @@ function MemberSidebar({
         />
       )}
 
-      <aside className={`member-sidebar ${menuOpen ? "sidebar-open" : ""}`}>
-        <div className="sidebar-top">
+      <aside
+        className={`member-sidebar ${menuOpen ? "sidebar-open" : ""}`}
+      >
+        <div>
           <div className="sidebar-brand">
             <NodeMark />
             <strong>Digital Hand</strong>
@@ -1279,7 +1303,9 @@ function MemberSidebar({
 
           <nav className="sidebar-nav">
             <button
-              className={screen === "dashboard" ? "sidebar-active" : ""}
+              className={
+                screen === "dashboard" ? "sidebar-active" : ""
+              }
               onClick={() => {
                 setScreen("dashboard");
                 setMenuOpen(false);
@@ -1313,8 +1339,8 @@ function MemberSidebar({
 
           <button
             className="sidebar-logout"
-            title="Log out"
             onClick={onSignOut}
+            title="Log out"
           >
             <LogOut size={17} />
           </button>
@@ -1362,12 +1388,13 @@ function ConversationCard({ conversation, onOpen }) {
 }
 
 /* =========================================================
-   NEW CHAT
+   NEW CONVERSATION
 ========================================================= */
 
 function NewConversation({ session, onCancel, onCreated }) {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
 
@@ -1406,6 +1433,7 @@ function NewConversation({ session, onCancel, onCreated }) {
       onCreated(conversation);
     } catch (err) {
       console.error(err);
+
       setError(err.message || "Couldn't start the conversation.");
     } finally {
       setWorking(false);
@@ -1430,12 +1458,12 @@ function NewConversation({ session, onCancel, onCreated }) {
           </p>
         </div>
 
-        <form className="card new-chat-form" onSubmit={createConversation}>
+        <form className="card" onSubmit={createConversation}>
           <label className="field">
             <span>What is the problem about?</span>
 
             <span className="field-help">
-              Keep this short — for example, "Printer won't connect".
+              For example, "Printer won't connect".
             </span>
 
             <input
@@ -1448,11 +1476,6 @@ function NewConversation({ session, onCancel, onCreated }) {
 
           <label className="field">
             <span>Tell us what's happening</span>
-
-            <span className="field-help">
-              Describe what you're seeing and what you've already
-              tried, if anything.
-            </span>
 
             <textarea
               rows={8}
@@ -1499,6 +1522,7 @@ function NewConversation({ session, onCancel, onCreated }) {
 function UserChat({ session, conversation, onBack }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
@@ -1524,7 +1548,7 @@ function UserChat({ session, conversation, onBack }) {
     loadMessages();
 
     const channel = supabase
-      .channel(`conversation-${conversation.id}`)
+      .channel(`user-chat-${conversation.id}`)
       .on(
         "postgres_changes",
         {
@@ -1536,7 +1560,7 @@ function UserChat({ session, conversation, onBack }) {
         (payload) => {
           setMessages((current) => {
             const exists = current.some(
-              (message) => message.id === payload.new.id
+              (item) => item.id === payload.new.id
             );
 
             return exists ? current : [...current, payload.new];
@@ -1632,9 +1656,7 @@ function UserChat({ session, conversation, onBack }) {
 
         <div className="messages-area">
           {loading ? (
-            <div className="center-loading">
-              <Loader2 className="spin" size={26} />
-            </div>
+            <LoadingPage />
           ) : (
             messages.map((message) => {
               const mine = message.sender_id === session.user.id;
@@ -1675,8 +1697,7 @@ function UserChat({ session, conversation, onBack }) {
               <strong>This conversation has been resolved.</strong>
 
               <p>
-                You can still read the full conversation. Start a new
-                chat if you need help with another problem.
+                You can still return and read the conversation.
               </p>
             </div>
           </div>
@@ -1708,474 +1729,7 @@ function UserChat({ session, conversation, onBack }) {
 }
 
 /* =========================================================
-   HELPER CHAT DASHBOARD
-========================================================= */
-
-function HelperChatDashboard({
-  session,
-  profile,
-  onSignOut,
-}) {
-  const [conversations, setConversations] = useState([]);
-  const [filter, setFilter] = useState("open");
-  const [selectedConversation, setSelectedConversation] =
-    useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-
-    const { data, error } = await supabase
-      .from("conversations")
-      .select("*")
-      .order("updated_at", { ascending: false });
-
-    if (error) {
-      console.error(error);
-    } else {
-      setConversations(data || []);
-    }
-
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  if (selectedConversation) {
-    return (
-      <HelperChat
-        session={session}
-        profile={profile}
-        conversation={selectedConversation}
-        onBack={() => {
-          setSelectedConversation(null);
-          load();
-        }}
-      />
-    );
-  }
-
-  const filtered = conversations.filter((conversation) => {
-    if (filter === "all") return true;
-
-    if (filter === "mine") {
-      return (
-        conversation.helper_id === session.user.id &&
-        conversation.status !== "resolved"
-      );
-    }
-
-    return conversation.status === filter;
-  });
-
-  const openCount = conversations.filter(
-    (conversation) => conversation.status === "open"
-  ).length;
-
-  const myCount = conversations.filter(
-    (conversation) =>
-      conversation.helper_id === session.user.id &&
-      conversation.status !== "resolved"
-  ).length;
-
-  return (
-    <main className="helper-dashboard">
-      <div className="queue-head">
-        <div>
-          <span className="eyebrow">DIGITAL HAND HELPER</span>
-
-          <h1>Support conversations</h1>
-
-          <p className="muted">
-            Signed in as{" "}
-            <strong>{profile.display_name || "Helper"}</strong>
-          </p>
-        </div>
-
-        <div className="helper-head-actions">
-          <button className="btn-ghost" onClick={load}>
-            <RefreshCw size={16} />
-            Refresh
-          </button>
-
-          <button className="btn-ghost" onClick={onSignOut}>
-            <LogOut size={16} />
-            Log out
-          </button>
-        </div>
-      </div>
-
-      <div className="helper-stats">
-        <div>
-          <strong>{openCount}</strong>
-          <span>Waiting for help</span>
-        </div>
-
-        <div>
-          <strong>{myCount}</strong>
-          <span>Assigned to me</span>
-        </div>
-      </div>
-
-      <div className="filter-row">
-        <button
-          className={`chip ${filter === "open" ? "chip-active" : ""}`}
-          onClick={() => setFilter("open")}
-        >
-          Waiting ({openCount})
-        </button>
-
-        <button
-          className={`chip ${filter === "mine" ? "chip-active" : ""}`}
-          onClick={() => setFilter("mine")}
-        >
-          My chats ({myCount})
-        </button>
-
-        <button
-          className={`chip ${
-            filter === "resolved" ? "chip-active" : ""
-          }`}
-          onClick={() => setFilter("resolved")}
-        >
-          Resolved
-        </button>
-
-        <button
-          className={`chip ${filter === "all" ? "chip-active" : ""}`}
-          onClick={() => setFilter("all")}
-        >
-          All
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="center-loading">
-          <Loader2 className="spin" size={28} />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="dashboard-empty">
-          <CheckCircle2 size={35} />
-          <h3>Nothing here right now</h3>
-        </div>
-      ) : (
-        <div className="helper-conversation-list">
-          {filtered.map((conversation) => (
-            <button
-              key={conversation.id}
-              className="helper-conversation-card"
-              onClick={() => setSelectedConversation(conversation)}
-            >
-              <div>
-                <span className="helper-conversation-status">
-                  {STATUS[conversation.status]?.label || "Open"}
-                </span>
-
-                <h3>{conversation.title}</h3>
-
-                <p>
-                  {conversation.helper_id === session.user.id
-                    ? "Assigned to you"
-                    : conversation.helper_id
-                    ? "Assigned to another helper"
-                    : "Waiting for a helper"}
-                </p>
-              </div>
-
-              <div className="helper-conversation-meta">
-                <span>{timeAgo(conversation.updated_at)}</span>
-                <ArrowRight size={17} />
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-    </main>
-  );
-}
-
-/* =========================================================
-   HELPER CHAT
-========================================================= */
-
-function HelperChat({
-  session,
-  profile,
-  conversation,
-  onBack,
-}) {
-  const [currentConversation, setCurrentConversation] =
-    useState(conversation);
-
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [working, setWorking] = useState(false);
-
-  const bottomRef = useRef(null);
-
-  const loadMessages = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("conversation_id", conversation.id)
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      console.error(error);
-    } else {
-      setMessages(data || []);
-    }
-
-    setLoading(false);
-  }, [conversation.id]);
-
-  useEffect(() => {
-    loadMessages();
-
-    const channel = supabase
-      .channel(`helper-conversation-${conversation.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversation.id}`,
-        },
-        (payload) => {
-          setMessages((current) => {
-            const exists = current.some(
-              (message) => message.id === payload.new.id
-            );
-
-            return exists ? current : [...current, payload.new];
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [conversation.id, loadMessages]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
-  }, [messages]);
-
-  async function claimConversation() {
-    setWorking(true);
-
-    const { data, error } = await supabase
-      .from("conversations")
-      .update({
-        helper_id: session.user.id,
-        status: "in_progress",
-      })
-      .eq("id", conversation.id)
-      .select()
-      .single();
-
-    if (!error) {
-      setCurrentConversation(data);
-    } else {
-      console.error(error);
-    }
-
-    setWorking(false);
-  }
-
-  async function resolveConversation() {
-    setWorking(true);
-
-    const { data, error } = await supabase
-      .from("conversations")
-      .update({
-        status: "resolved",
-      })
-      .eq("id", conversation.id)
-      .select()
-      .single();
-
-    if (!error) {
-      setCurrentConversation(data);
-    } else {
-      console.error(error);
-    }
-
-    setWorking(false);
-  }
-
-  async function sendMessage(e) {
-    e.preventDefault();
-
-    if (!newMessage.trim() || working) return;
-
-    const content = newMessage.trim();
-
-    setNewMessage("");
-    setWorking(true);
-
-    const { error } = await supabase.from("messages").insert({
-      conversation_id: conversation.id,
-      sender_id: session.user.id,
-      message: content,
-    });
-
-    if (error) {
-      console.error(error);
-      setNewMessage(content);
-    }
-
-    setWorking(false);
-  }
-
-  const isMine = currentConversation.helper_id === session.user.id;
-  const isUnclaimed = !currentConversation.helper_id;
-  const resolved = currentConversation.status === "resolved";
-
-  return (
-    <main className="chat-page helper-chat-page">
-      <div className="chat-topbar">
-        <button className="chat-back" onClick={onBack}>
-          ← Support queue
-        </button>
-
-        <div>
-          <span className="eyebrow">HELPER CHAT</span>
-
-          <h1>{currentConversation.title}</h1>
-
-          <p>
-            {isUnclaimed
-              ? "This conversation is waiting for a helper."
-              : isMine
-              ? `Assigned to ${profile.display_name}`
-              : "Assigned to another helper."}
-          </p>
-        </div>
-
-        <div className="helper-chat-actions">
-          {isUnclaimed && !resolved && (
-            <button
-              className="btn-primary"
-              onClick={claimConversation}
-              disabled={working}
-            >
-              Claim conversation
-            </button>
-          )}
-
-          {isMine && !resolved && (
-            <button
-              className="btn-ghost"
-              onClick={resolveConversation}
-              disabled={working}
-            >
-              <CheckCircle2 size={17} />
-              Mark resolved
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="chat-window">
-        <div className="chat-safety">
-          <ShieldCheck size={18} />
-
-          <span>
-            Never ask users to send passwords, banking details,
-            PINs or security codes.
-          </span>
-        </div>
-
-        <div className="messages-area">
-          {loading ? (
-            <div className="center-loading">
-              <Loader2 className="spin" size={26} />
-            </div>
-          ) : (
-            messages.map((message) => {
-              const mine = message.sender_id === session.user.id;
-
-              return (
-                <div
-                  key={message.id}
-                  className={`message-row ${
-                    mine ? "message-row-mine" : ""
-                  }`}
-                >
-                  <div
-                    className={`message-bubble ${
-                      mine ? "message-mine" : "message-user"
-                    }`}
-                  >
-                    <span className="message-sender">
-                      {mine ? "You" : "User"}
-                    </span>
-
-                    <p>{message.message}</p>
-
-                    <small>{formatDate(message.created_at)}</small>
-                  </div>
-                </div>
-              );
-            })
-          )}
-
-          <div ref={bottomRef} />
-        </div>
-
-        {resolved ? (
-          <div className="resolved-chat-notice">
-            <CheckCircle2 size={22} />
-
-            <div>
-              <strong>Conversation resolved.</strong>
-
-              <p>This chat is now part of the user's support history.</p>
-            </div>
-          </div>
-        ) : isMine ? (
-          <form className="chat-composer" onSubmit={sendMessage}>
-            <textarea
-              rows={2}
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Reply to the user..."
-            />
-
-            <button
-              type="submit"
-              className="chat-send"
-              disabled={!newMessage.trim() || working}
-            >
-              {working ? (
-                <Loader2 className="spin" size={19} />
-              ) : (
-                <Send size={19} />
-              )}
-            </button>
-          </form>
-        ) : (
-          <div className="claim-before-reply">
-            {isUnclaimed
-              ? "Claim this conversation before replying."
-              : "This conversation is assigned to another helper."}
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
-
-/* =========================================================
-   EXISTING NO-ACCOUNT VOLUNTEER TICKET PORTAL
+   UNIFIED VOLUNTEER PORTAL
 ========================================================= */
 
 function VolunteerArea({
@@ -2185,7 +1739,11 @@ function VolunteerArea({
   reloadProfile,
   onSignOut,
 }) {
-  if (checkingSession) return <LoadingPage />;
+  const [portalSection, setPortalSection] = useState("chats");
+
+  if (checkingSession) {
+    return <LoadingPage />;
+  }
 
   if (!session) {
     return <VolunteerLogin />;
@@ -2195,10 +1753,16 @@ function VolunteerArea({
     return (
       <main className="portal-page">
         <div className="card gate">
-          <p>Couldn't load your profile.</p>
+          <Loader2 className="spin" size={28} />
+
+          <h2>Loading your helper profile...</h2>
 
           <button className="btn-ghost" onClick={reloadProfile}>
             Try again
+          </button>
+
+          <button className="btn-ghost" onClick={onSignOut}>
+            Log out
           </button>
         </div>
       </main>
@@ -2227,16 +1791,92 @@ function VolunteerArea({
   }
 
   return (
-    <Queue
-      volunteerName={profile.display_name || "Helper"}
-      onSwitchUser={onSignOut}
-    />
+    <main className="unified-volunteer-portal">
+      <div className="volunteer-portal-switcher">
+        <div>
+          <span className="eyebrow">VOLUNTEER PORTAL</span>
+
+          <h1>Digital Hand Support</h1>
+
+          <p>
+            Manage live conversations and traditional help requests
+            from one place.
+          </p>
+        </div>
+
+        <div className="volunteer-portal-user">
+          <span>
+            Signed in as{" "}
+            <strong>{profile.display_name || "Helper"}</strong>
+          </span>
+
+          <button className="btn-ghost" onClick={onSignOut}>
+            <LogOut size={16} />
+            Log out
+          </button>
+        </div>
+      </div>
+
+      <div className="support-type-tabs">
+        <button
+          className={`support-type-tab ${
+            portalSection === "chats"
+              ? "support-type-tab-active"
+              : ""
+          }`}
+          onClick={() => setPortalSection("chats")}
+        >
+          <MessagesSquare size={21} />
+
+          <div>
+            <strong>Live / Saved Chats</strong>
+            <span>Users with Digital Hand accounts</span>
+          </div>
+        </button>
+
+        <button
+          className={`support-type-tab ${
+            portalSection === "requests"
+              ? "support-type-tab-active"
+              : ""
+          }`}
+          onClick={() => setPortalSection("requests")}
+        >
+          <Phone size={21} />
+
+          <div>
+            <strong>Contact Requests</strong>
+            <span>Users who don't have an account</span>
+          </div>
+        </button>
+      </div>
+
+      <div className="volunteer-portal-content">
+        {portalSection === "chats" && (
+          <HelperChatDashboard
+            session={session}
+            profile={profile}
+          />
+        )}
+
+        {portalSection === "requests" && (
+          <Queue
+            volunteerName={profile.display_name || "Helper"}
+          />
+        )}
+      </div>
+    </main>
   );
 }
+
+/* =========================================================
+   VOLUNTEER LOGIN
+========================================================= */
 
 function VolunteerLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState("");
 
@@ -2281,6 +1921,7 @@ function VolunteerLogin() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            placeholder="helper@example.com"
           />
         </label>
 
@@ -2310,11 +1951,488 @@ function VolunteerLogin() {
   );
 }
 
-function Queue({ volunteerName, onSwitchUser }) {
+/* =========================================================
+   HELPER CHAT DASHBOARD
+========================================================= */
+
+function HelperChatDashboard({ session, profile }) {
+  const [conversations, setConversations] = useState([]);
+  const [filter, setFilter] = useState("open");
+
+  const [selectedConversation, setSelectedConversation] =
+    useState(null);
+
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("conversations")
+      .select("*")
+      .order("updated_at", { ascending: false });
+
+    if (error) {
+      console.error("Conversation load error:", error);
+    } else {
+      setConversations(data || []);
+    }
+
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (selectedConversation) {
+    return (
+      <HelperChat
+        session={session}
+        profile={profile}
+        conversation={selectedConversation}
+        onBack={() => {
+          setSelectedConversation(null);
+          load();
+        }}
+      />
+    );
+  }
+
+  const filtered = conversations.filter((conversation) => {
+    if (filter === "all") return true;
+
+    if (filter === "mine") {
+      return (
+        conversation.helper_id === session.user.id &&
+        conversation.status !== "resolved"
+      );
+    }
+
+    return conversation.status === filter;
+  });
+
+  const openCount = conversations.filter(
+    (conversation) => conversation.status === "open"
+  ).length;
+
+  const mineCount = conversations.filter(
+    (conversation) =>
+      conversation.helper_id === session.user.id &&
+      conversation.status !== "resolved"
+  ).length;
+
+  const resolvedCount = conversations.filter(
+    (conversation) => conversation.status === "resolved"
+  ).length;
+
+  return (
+    <section className="volunteer-subsection">
+      <div className="subsection-heading">
+        <div>
+          <h2>Live / Saved Chats</h2>
+
+          <p>
+            Help people who have created Digital Hand accounts.
+          </p>
+        </div>
+
+        <button className="btn-ghost" onClick={load}>
+          <RefreshCw size={16} />
+          Refresh
+        </button>
+      </div>
+
+      <div className="helper-stats">
+        <div>
+          <strong>{openCount}</strong>
+          <span>Waiting</span>
+        </div>
+
+        <div>
+          <strong>{mineCount}</strong>
+          <span>My chats</span>
+        </div>
+
+        <div>
+          <strong>{resolvedCount}</strong>
+          <span>Resolved</span>
+        </div>
+      </div>
+
+      <div className="filter-row">
+        <button
+          className={`chip ${filter === "open" ? "chip-active" : ""}`}
+          onClick={() => setFilter("open")}
+        >
+          Waiting ({openCount})
+        </button>
+
+        <button
+          className={`chip ${filter === "mine" ? "chip-active" : ""}`}
+          onClick={() => setFilter("mine")}
+        >
+          My chats ({mineCount})
+        </button>
+
+        <button
+          className={`chip ${
+            filter === "resolved" ? "chip-active" : ""
+          }`}
+          onClick={() => setFilter("resolved")}
+        >
+          Resolved ({resolvedCount})
+        </button>
+
+        <button
+          className={`chip ${filter === "all" ? "chip-active" : ""}`}
+          onClick={() => setFilter("all")}
+        >
+          All
+        </button>
+      </div>
+
+      {loading ? (
+        <LoadingPage />
+      ) : filtered.length === 0 ? (
+        <div className="dashboard-empty">
+          <CheckCircle2 size={35} />
+
+          <h3>Nothing here right now</h3>
+
+          <p>New member chats will appear here.</p>
+        </div>
+      ) : (
+        <div className="helper-conversation-list">
+          {filtered.map((conversation) => (
+            <button
+              key={conversation.id}
+              className="helper-conversation-card"
+              onClick={() => setSelectedConversation(conversation)}
+            >
+              <div>
+                <span className="helper-conversation-status">
+                  {STATUS[conversation.status]?.label || "Open"}
+                </span>
+
+                <h3>{conversation.title}</h3>
+
+                <p>
+                  {conversation.helper_id === session.user.id
+                    ? "Assigned to you"
+                    : conversation.helper_id
+                    ? "Assigned to another helper"
+                    : "Waiting for a helper"}
+                </p>
+              </div>
+
+              <div className="helper-conversation-meta">
+                <span>{timeAgo(conversation.updated_at)}</span>
+                <ArrowRight size={17} />
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* =========================================================
+   HELPER CHAT
+========================================================= */
+
+function HelperChat({
+  session,
+  profile,
+  conversation,
+  onBack,
+}) {
+  const [currentConversation, setCurrentConversation] =
+    useState(conversation);
+
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+
+  const [loading, setLoading] = useState(true);
+  const [working, setWorking] = useState(false);
+
+  const bottomRef = useRef(null);
+
+  const loadMessages = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("conversation_id", conversation.id)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("Message load error:", error);
+    } else {
+      setMessages(data || []);
+    }
+
+    setLoading(false);
+  }, [conversation.id]);
+
+  useEffect(() => {
+    loadMessages();
+
+    const channel = supabase
+      .channel(`helper-chat-${conversation.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversation.id}`,
+        },
+        (payload) => {
+          setMessages((current) => {
+            const exists = current.some(
+              (message) => message.id === payload.new.id
+            );
+
+            return exists ? current : [...current, payload.new];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversation.id, loadMessages]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [messages]);
+
+  async function claimConversation() {
+    setWorking(true);
+
+    const { data, error } = await supabase
+      .from("conversations")
+      .update({
+        helper_id: session.user.id,
+        status: "in_progress",
+      })
+      .eq("id", conversation.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Claim error:", error);
+    } else {
+      setCurrentConversation(data);
+    }
+
+    setWorking(false);
+  }
+
+  async function resolveConversation() {
+    setWorking(true);
+
+    const { data, error } = await supabase
+      .from("conversations")
+      .update({
+        status: "resolved",
+      })
+      .eq("id", conversation.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Resolve error:", error);
+    } else {
+      setCurrentConversation(data);
+    }
+
+    setWorking(false);
+  }
+
+  async function sendMessage(e) {
+    e.preventDefault();
+
+    if (!newMessage.trim() || working) return;
+
+    const content = newMessage.trim();
+
+    setNewMessage("");
+    setWorking(true);
+
+    const { error } = await supabase.from("messages").insert({
+      conversation_id: conversation.id,
+      sender_id: session.user.id,
+      message: content,
+    });
+
+    if (error) {
+      console.error("Send error:", error);
+      setNewMessage(content);
+    }
+
+    setWorking(false);
+  }
+
+  const isMine =
+    currentConversation.helper_id === session.user.id;
+
+  const isUnclaimed = !currentConversation.helper_id;
+
+  const resolved =
+    currentConversation.status === "resolved";
+
+  return (
+    <div className="embedded-helper-chat">
+      <div className="chat-topbar">
+        <button className="chat-back" onClick={onBack}>
+          ← Back to chats
+        </button>
+
+        <div>
+          <span className="eyebrow">SUPPORT CHAT</span>
+
+          <h1>{currentConversation.title}</h1>
+
+          <p>
+            {isUnclaimed
+              ? "Waiting for a helper."
+              : isMine
+              ? `Assigned to ${profile.display_name}`
+              : "Assigned to another helper."}
+          </p>
+        </div>
+
+        <div className="helper-chat-actions">
+          {isUnclaimed && !resolved && (
+            <button
+              className="btn-primary"
+              onClick={claimConversation}
+              disabled={working}
+            >
+              Claim conversation
+            </button>
+          )}
+
+          {isMine && !resolved && (
+            <button
+              className="btn-ghost"
+              onClick={resolveConversation}
+              disabled={working}
+            >
+              <CheckCircle2 size={17} />
+              Mark resolved
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="chat-window">
+        <div className="chat-safety">
+          <ShieldCheck size={18} />
+
+          <span>
+            Never ask users for passwords, PINs, banking details or
+            security codes.
+          </span>
+        </div>
+
+        <div className="messages-area">
+          {loading ? (
+            <LoadingPage />
+          ) : (
+            messages.map((message) => {
+              const mine =
+                message.sender_id === session.user.id;
+
+              return (
+                <div
+                  key={message.id}
+                  className={`message-row ${
+                    mine ? "message-row-mine" : ""
+                  }`}
+                >
+                  <div
+                    className={`message-bubble ${
+                      mine ? "message-mine" : "message-user"
+                    }`}
+                  >
+                    <span className="message-sender">
+                      {mine ? "You" : "User"}
+                    </span>
+
+                    <p>{message.message}</p>
+
+                    <small>{formatDate(message.created_at)}</small>
+                  </div>
+                </div>
+              );
+            })
+          )}
+
+          <div ref={bottomRef} />
+        </div>
+
+        {resolved ? (
+          <div className="resolved-chat-notice">
+            <CheckCircle2 size={22} />
+
+            <div>
+              <strong>Conversation resolved.</strong>
+
+              <p>
+                It is now saved in the user's support history.
+              </p>
+            </div>
+          </div>
+        ) : isMine ? (
+          <form className="chat-composer" onSubmit={sendMessage}>
+            <textarea
+              rows={2}
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Reply to the user..."
+            />
+
+            <button
+              type="submit"
+              className="chat-send"
+              disabled={!newMessage.trim() || working}
+            >
+              {working ? (
+                <Loader2 className="spin" size={19} />
+              ) : (
+                <Send size={19} />
+              )}
+            </button>
+          </form>
+        ) : (
+          <div className="claim-before-reply">
+            {isUnclaimed
+              ? "Claim this conversation before replying."
+              : "This chat is assigned to another helper."}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   NO ACCOUNT REQUEST QUEUE
+========================================================= */
+
+function Queue({ volunteerName }) {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [filter, setFilter] = useState("open");
   const [expandedId, setExpandedId] = useState(null);
+
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -2330,8 +2448,9 @@ function Queue({ volunteerName, onSwitchUser }) {
       if (fetchError) throw fetchError;
 
       setTickets(data || []);
-    } catch {
-      setError("Couldn't load the request queue.");
+    } catch (err) {
+      console.error(err);
+      setError("Couldn't load contact requests.");
     } finally {
       setLoading(false);
     }
@@ -2348,6 +2467,7 @@ function Queue({ volunteerName, onSwitchUser }) {
       .eq("id", id);
 
     if (updateError) {
+      console.error(updateError);
       setError("Couldn't save that change.");
       return;
     }
@@ -2356,59 +2476,106 @@ function Queue({ volunteerName, onSwitchUser }) {
   }
 
   const filtered = tickets.filter(
-    (ticket) => filter === "all" || ticket.status === filter
+    (ticket) =>
+      filter === "all" || ticket.status === filter
   );
 
+  const newCount = tickets.filter(
+    (ticket) => ticket.status === "open"
+  ).length;
+
+  const progressCount = tickets.filter(
+    (ticket) => ticket.status === "in_progress"
+  ).length;
+
+  const resolvedCount = tickets.filter(
+    (ticket) => ticket.status === "resolved"
+  ).length;
+
   return (
-    <main className="portal-page">
-      <div className="queue-head">
+    <section className="volunteer-subsection">
+      <div className="subsection-heading">
         <div>
-          <span className="eyebrow">NO-ACCOUNT REQUESTS</span>
+          <h2>Contact Requests</h2>
 
-          <h2 className="queue-title">Help requests</h2>
-
-          <p className="muted">
-            Signed in as <strong>{volunteerName}</strong>
+          <p>
+            Requests from people who chose not to create an account.
           </p>
         </div>
 
-        <div className="helper-head-actions">
-          <button className="btn-ghost" onClick={load}>
-            <RefreshCw size={15} />
-            Refresh
-          </button>
+        <button className="btn-ghost" onClick={load}>
+          <RefreshCw size={16} />
+          Refresh
+        </button>
+      </div>
 
-          <button className="btn-ghost" onClick={onSwitchUser}>
-            <LogOut size={15} />
-            Log out
-          </button>
+      <div className="helper-stats">
+        <div>
+          <strong>{newCount}</strong>
+          <span>New</span>
+        </div>
+
+        <div>
+          <strong>{progressCount}</strong>
+          <span>In progress</span>
+        </div>
+
+        <div>
+          <strong>{resolvedCount}</strong>
+          <span>Resolved</span>
         </div>
       </div>
 
       <div className="filter-row">
-        {["open", "in_progress", "resolved", "all"].map((item) => (
-          <button
-            key={item}
-            className={`chip ${
-              filter === item ? "chip-active" : ""
-            }`}
-            onClick={() => setFilter(item)}
-          >
-            {item === "open"
-              ? "New"
-              : item === "in_progress"
-              ? "In progress"
-              : item === "resolved"
-              ? "Resolved"
-              : "All"}
-          </button>
-        ))}
+        <button
+          className={`chip ${
+            filter === "open" ? "chip-active" : ""
+          }`}
+          onClick={() => setFilter("open")}
+        >
+          New ({newCount})
+        </button>
+
+        <button
+          className={`chip ${
+            filter === "in_progress" ? "chip-active" : ""
+          }`}
+          onClick={() => setFilter("in_progress")}
+        >
+          In progress ({progressCount})
+        </button>
+
+        <button
+          className={`chip ${
+            filter === "resolved" ? "chip-active" : ""
+          }`}
+          onClick={() => setFilter("resolved")}
+        >
+          Resolved ({resolvedCount})
+        </button>
+
+        <button
+          className={`chip ${
+            filter === "all" ? "chip-active" : ""
+          }`}
+          onClick={() => setFilter("all")}
+        >
+          All
+        </button>
       </div>
 
       {error && <div className="error-text">{error}</div>}
 
       {loading ? (
         <LoadingPage />
+      ) : filtered.length === 0 ? (
+        <div className="dashboard-empty">
+          <CheckCircle2 size={35} />
+
+          <h3>No requests here</h3>
+
+          <p>New no-account requests will appear here.</p>
+        </div>
       ) : (
         <ul className="ticket-list">
           {filtered.map((ticket) => (
@@ -2429,7 +2596,7 @@ function Queue({ volunteerName, onSwitchUser }) {
           ))}
         </ul>
       )}
-    </main>
+    </section>
   );
 }
 
@@ -2446,16 +2613,34 @@ function TicketCard({
     (method) => method.id === ticket.method
   );
 
+  const urgencyInfo = URGENCY_LEVELS.find(
+    (urgency) => urgency.id === ticket.urgency
+  );
+
   const Icon = methodInfo?.icon || Phone;
 
   return (
     <li className="ticket-card">
       <button className="ticket-summary" onClick={onToggle}>
         <span className="ticket-name">{ticket.name}</span>
-        <span className="ticket-desc">{ticket.description}</span>
-        <span className="ticket-time">{timeAgo(ticket.created_at)}</span>
 
-        {expanded ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
+        <span className="ticket-desc">
+          {ticket.description}
+        </span>
+
+        {ticket.urgency === "high" && (
+          <span className="badge-urgent">Urgent</span>
+        )}
+
+        <span className="ticket-time">
+          {timeAgo(ticket.created_at)}
+        </span>
+
+        {expanded ? (
+          <ChevronUp size={17} />
+        ) : (
+          <ChevronDown size={17} />
+        )}
       </button>
 
       {expanded && (
@@ -2467,19 +2652,41 @@ function TicketCard({
             </div>
 
             <div>
-              <span className="detail-label">Preferred method</span>
+              <span className="detail-label">
+                Preferred method
+              </span>
 
               <span className="inline-icon">
                 <Icon size={14} />
-                {methodInfo?.label}
+                {methodInfo?.label || ticket.method}
               </span>
+            </div>
+
+            <div>
+              <span className="detail-label">How soon</span>
+
+              <span>
+                {urgencyInfo?.label || ticket.urgency}
+              </span>
+            </div>
+
+            <div>
+              <span className="detail-label">Submitted</span>
+
+              <span>{formatDate(ticket.created_at)}</span>
             </div>
           </div>
 
-          <p className="full-desc">{ticket.description}</p>
+          <div>
+            <span className="detail-label">Problem</span>
+
+            <p className="full-desc">
+              {ticket.description}
+            </p>
+          </div>
 
           <div className="action-row">
-            {!ticket.claimed_by && (
+            {!ticket.claimed_by ? (
               <button
                 className="btn-primary small"
                 onClick={() =>
@@ -2491,12 +2698,18 @@ function TicketCard({
               >
                 Claim request
               </button>
+            ) : (
+              <span className="claimed-by">
+                Claimed by {ticket.claimed_by}
+              </span>
             )}
 
             <select
               value={ticket.status}
               onChange={(e) =>
-                onUpdate({ status: e.target.value })
+                onUpdate({
+                  status: e.target.value,
+                })
               }
               className="status-select"
             >
@@ -2514,6 +2727,7 @@ function TicketCard({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               onBlur={() => onUpdate({ notes })}
+              placeholder="What's been tried, what's next..."
             />
           </label>
         </div>
@@ -2523,7 +2737,7 @@ function TicketCard({
 }
 
 /* =========================================================
-   POLICIES
+   PRIVACY
 ========================================================= */
 
 function PrivacyView({ onBack }) {
@@ -2579,7 +2793,9 @@ function PrivacyView({ onBack }) {
             <ShieldCheck size={22} />
 
             <div>
-              <strong>Never send passwords or financial details.</strong>
+              <strong>
+                Never send passwords or financial details.
+              </strong>
 
               <p>
                 Do not send passwords, PINs, banking details, card
@@ -2614,6 +2830,10 @@ function PrivacyView({ onBack }) {
   );
 }
 
+/* =========================================================
+   SAFETY
+========================================================= */
+
 function SafetyView({ onBack }) {
   return (
     <main className="policy-page">
@@ -2625,6 +2845,11 @@ function SafetyView({ onBack }) {
         <span className="eyebrow">DIGITAL HAND</span>
 
         <h1>Staying Safe</h1>
+
+        <p className="policy-intro">
+          Digital Hand wants everyone receiving technology help to
+          feel safe and remain in control.
+        </p>
 
         <div className="safety-rule-grid">
           <SafetyRule
