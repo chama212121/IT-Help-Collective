@@ -347,28 +347,18 @@ function PublicView({
     setError("");
 
     try {
-      const { data, error } = await supabase
-  .from("tickets")
-  .insert([
-    {
-      name,
-      contact,
-      method,
-      urgency,
-      description,
-      status: "open",
-      claimed_by: null,
-      notes: null,
-    },
-  ]);
-
-console.log("TICKET DATA:", data);
-console.log("TICKET ERROR:", error);
-
-if (error) {
-  alert(error.message);
-  return;
-}
+      const { error: insertError } = await supabase
+        .from("tickets")
+        .insert([
+          {
+            name: name.trim(),
+            contact: contact.trim(),
+            method,
+            urgency,
+            description: description.trim(),
+            status: "open",
+            claimed_by: null,
+            notes: null,
           },
         ]);
 
@@ -376,10 +366,11 @@ if (error) {
 
       setSubmitted(true);
     } catch (err) {
-      console.error(err);
+      console.error("Ticket submission error:", err);
 
       setError(
-        "Something went wrong sending your request. Please try again."
+        err?.message ||
+          "Something went wrong sending your request. Please try again."
       );
     } finally {
       setSubmitting(false);
