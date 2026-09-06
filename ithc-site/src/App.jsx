@@ -347,16 +347,28 @@ function PublicView({
     setError("");
 
     try {
-      const { error: insertError } = await supabase
-        .from("tickets")
-        .insert([
-          {
-            name: name.trim(),
-            contact: contact.trim(),
-            method,
-            urgency,
-            description: description.trim(),
-            status: "open",
+      const { data, error } = await supabase
+  .from("tickets")
+  .insert([
+    {
+      name,
+      contact,
+      method,
+      urgency,
+      description,
+      status: "open",
+      claimed_by: null,
+      notes: null,
+    },
+  ]);
+
+console.log("TICKET DATA:", data);
+console.log("TICKET ERROR:", error);
+
+if (error) {
+  alert(error.message);
+  return;
+}
           },
         ]);
 
